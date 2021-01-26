@@ -71,7 +71,7 @@ def makeDatabase(schema):
 def TokenizeQuery(query):
     input_query=sys.argv[1]
     if not input_query[-1]==";":
-        sys.stderr.write("SQL query should end with ;")
+        sys.stderr.write("SQL query should end with ;\n")
         sys.exit()
     input_query=input_query[:-1]
     query=sqlparse.format(input_query,keyword_case='upper')
@@ -94,12 +94,12 @@ def handleCols(col_list):
         if '(' in c:
             c= c.split('(')
             if c[1][:-1] not in validColumnsInDatabase:
-                sys.stderr.write("Error: invalid column name "+c[1][:-1])
+                sys.stderr.write("Error: invalid column name "+c[1][:-1]+"\n")
                 sys.exit()
             functions.append([c[0],c[1][:-1]])
         else:
             if c not in validColumnsInDatabase:
-                sys.stderr.write("Error: invalid column name "+str(c))
+                sys.stderr.write("Error: invalid column name "+str(c)+"\n")
                 sys.exit()
             loneColumns.append(c)
     #print("agg function list=",functions)
@@ -111,7 +111,7 @@ def checkTablesandCols(tables, cols):
     #print("columns passed in query=",cols)
     for table in tables:
         if table not in schema:
-            sys.stderr.write("Error: table doesn't exist "+table)
+            sys.stderr.write("Error: table doesn't exist "+table+"\n")
             sys.exit()
     return handleCols(cols)
 
@@ -122,13 +122,13 @@ def processQuery(queryTokens):
     distinct_flag=0  #to denote is dinstinct keyword is present
     clauses=[]       #to store clauses from where and after, if any
     if len(queryTokens)<4:
-        sys.stderr.write("Error: too small query")
+        sys.stderr.write("Error: too small query\n")
         sys.exit()
     if queryTokens[0]!="SELECT":
-        sys.stderr.write("Error: First clause of query should be SELECT")
+        sys.stderr.write("Error: First clause of query should be SELECT\n")
         sys.exit()
     if (queryTokens[2]!="FROM" and queryTokens[1]!="DISTINCT") or (queryTokens[1]=="DISTINCT" and queryTokens[3]!="FROM"):
-        sys.stderr.write("Error: query should contain FROM or correct spelling of distinct (if provided)")
+        sys.stderr.write("Error: query should contain FROM or correct spelling of distinct (if provided)\n")
         sys.exit()
     if queryTokens[1]=="DISTINCT":
         distinct_flag=1
@@ -138,7 +138,7 @@ def processQuery(queryTokens):
         tables_list=queryTokens[3]
         col_list=queryTokens[1].replace(" ","")
     if col_list==[] or tables_list==[]:
-        sys.stderr.write("Error: either column name(s) or table name(s) is missing")
+        sys.stderr.write("Error: either column name(s) or table name(s) is missing\n")
         sys.exit()
     tables=tables_list.replace(" ","").split(",")
     cols=col_list.split(",")
@@ -205,7 +205,7 @@ def fetchWhereConditions(conditionStr,opList):
                 conditionL=conditionStr.split(operator)
                 #print("conditionL",conditionL)
                 if len(conditionL)>2:
-                    sys.stderr.write("Error. Too many operators")
+                    sys.stderr.write("Error. Too many operators\n")
                     sys,exit()
                 for i in range(len(conditionL)):
                     conditionL[i]=conditionL[i].strip()
@@ -214,7 +214,7 @@ def fetchWhereConditions(conditionStr,opList):
                 break
     #print("conditionL",conditionL)
     if opFound==False:
-        sys.stderr.write("Error:Operator not supported or invalid")
+        sys.stderr.write("Error:Operator not supported or invalid\n")
         sys.exit()
     return conditionL
 
@@ -234,14 +234,14 @@ def processWhere(whereClause):
     elif whereClause.find("OR")!=-1:
         relop="OR"
     else:
-        sys.stderr.write("Error: Only AND and OR relational operator supported")
+        sys.stderr.write("Error: Only AND and OR relational operator supported\n")
         sys.exit()
     if relop!="":
         whereClause=whereClause.split(relop)
     #print(whereClause)
     if singleCond==0:
         if len(whereClause)>3 and singleCond==0:
-            sys.stderr.write("Error: Operator not supported or invalid")
+            sys.stderr.write("Error: Operator not supported or invalid\n")
             sys.exit()
         else:
             conditionList.append(fetchWhereConditions(whereClause[0],opList))
@@ -257,13 +257,13 @@ def processWhere(whereClause):
             exp=str(rows[getIndex(conditionList[0][0])])+str(opList[0])+conditionList[0][1]
         else:
             if conditionList[0][1] not in productHeaders:
-                sys.stderr.write("Error: wrong col names")
+                sys.stderr.write("Error: wrong col names\n")
                 sys.exit()
             else:
                 exp=str(rows[getIndex(conditionList[0][0])])+str(opList[0])+str(rows[getIndex(conditionList[0][1])])
         if len(opList)==2:
             if conditionList[1][0] not in productHeaders:
-                sys.stderr.write("Error: wrong col names")
+                sys.stderr.write("Error: wrong col names\n")
                 sys.exit()
             if re.match('^[0-9]*$', conditionList[1][1]):
                 exp+=" "+relop.lower()+" "+str(rows[getIndex(conditionList[1][0])])+str(opList[1])+conditionList[1][1]
@@ -282,16 +282,16 @@ def processGroupBy(clauses, cols, table):           #clauses=['GROUP BY', 'colna
     # print("clauses passed in group by=",clauses)
     # print("columns present in query are=",cols)
     if cols==[]:
-        sys.stderr.write("Error: Query doesn't make sense. So not handled!!!")
+        sys.stderr.write("Error: Query doesn't make sense. So not handled!!!\n")
         sys.exit()
     groupCol=clauses[1].split(',')
     #print("column present in group by are=",groupCol)
     if len(groupCol)!=len(cols):
-        sys.stderr.write("Error: mismatch of columns in groupby and select")
+        sys.stderr.write("Error: mismatch of columns in groupby and select\n")
         sys.exit()
     for c in cols:
         if c not in groupCol:
-            sys.stderr.write("Query doesn't make sense. Aborting!!!")
+            sys.stderr.write("Query doesn't make sense. Aborting!!!\n")
             sys.exit()
     groupedAns={}
     colIndex=getIndex(groupCol[0])
@@ -390,7 +390,7 @@ def processOrderBy(clauses,table,selectList,grouped):
     else: orderCols=clauses[1]
     #print(orderCols)
     if orderCols not in productHeaders:
-        sys.stderr.write("Column not in this table")
+        sys.stderr.write("Column not in this table\n")
         sys.exit()
     # print("oooooo")
     # print(orderCols)
@@ -420,7 +420,7 @@ def distinct(table):
 ####Checks whether both groupby and orderby have same columns or not####
 def checkOrderAndGroup(groupCols,orderCols):
     if len(groupCols.split(","))>1:
-        sys.stderr.write("Sorry: Only 1 column can be grouped in limited sql engine. Aborting!!!")
+        sys.stderr.write("Sorry: Only 1 column can be grouped in limited sql engine. Aborting!!!\n")
         sys.exit()
     if orderCols.find("ASC")!=-1:
         orderCols=orderCols.replace("ASC","").strip()
@@ -428,7 +428,7 @@ def checkOrderAndGroup(groupCols,orderCols):
         orderCols=orderCols.replace("DESC","").strip()
     # print("groupCols=",groupCols,"OrderCols=",orderCols)
     if groupCols!=orderCols:
-        sys.stderr.write("Error: group by and order by should have same columns")
+        sys.stderr.write("Error: group by and order by should have same columns\n")
         sys.exit()
 
 def projectHelper(table, cols, selectList,grouped):
@@ -487,7 +487,7 @@ def beautifyTable(table, selectList,cols,grouped):     #grouped->remove
                     displayHeader[i]=t+"."+displayHeader[i]
                     #print("displayHeader[i]=",displayHeader[i])
     for i in range(len(displayHeader)):
-        displayHeader[i]=displayHeader[i].lower()
+        displayHeader[i]=displayHeader[i]
     for i in range(len(displayHeader)):
         if i==len(displayHeader)-1:
             print(displayHeader[i],end='\n')
@@ -508,18 +508,18 @@ def executeQuery(tables, cols, distinct_flag, clauses, selectList):
             cols.append(col)
     for c in cols:
         if c not in productHeaders:
-            sys.stderr.write("Column not in this table")
+            sys.stderr.write("Column not in this table\n")
             sys.exit()
     newTable=[]
     if clauses==[]:                   #select MAX(A) from t1,t2 or select a,b from t1,t2
         if  functions!=[] and cols!=[]:
-            sys.stderr.write("Error:Lone columns cannot exist in select without group by, when agregate functions are present")
+            sys.stderr.write("Error:Lone columns cannot exist in select without group by, when agregate functions are present\n")
             sys.exit()
         newTable=aggregate(product)
     #print("clauses after joining tables are=",clauses)
     if len(clauses)==1:         #it should only have ['WHERE COND1 AND/OR COND2']
         if functions!=[] and cols!=[]:
-            sys.stderr.write("Error:Lone columns cannot exist in select without group by, when agregate functions are present")
+            sys.stderr.write("Error:Lone columns cannot exist in select without group by, when agregate functions are present\n")
             sys.exit()
         finalAns=processWhere(clauses[0])
         #print("table after applying where=")
@@ -537,7 +537,7 @@ def executeQuery(tables, cols, distinct_flag, clauses, selectList):
             newTable=aggregate(product)
             newTable=processOrderBy(clauses,newTable,selectList,0)
         else:
-            sys.stderr.write("Error: where should follow group by and/or order by only")
+            sys.stderr.write("Error: where should follow group by and/or order by only\n")
             sys.exit()
     if len(clauses)==3:        # ['WHERE CONDS', 'GROUP BY', 'Cols'] or ['WHERE CONDS', 'ORDER BY', 'Cols']
         finalAns=processWhere(clauses[0])
@@ -551,14 +551,14 @@ def executeQuery(tables, cols, distinct_flag, clauses, selectList):
             newTable=aggregate(finalAns)
             newTable=processOrderBy(clauses[1:],newTable,selectList,0)
         else:
-            sys.stderr.write("Error: where should follow group by and/or order by only")
+            sys.stderr.write("Error: where should follow group by and/or order by only\n")
             sys.exit()
     if len(clauses)==4:     #['GROUP BY', 'Cols', 'ORDER BY', 'Cols']
         if clauses[0]!="GROUP BY":
-            sys.stderr.write("Error: Wrong sql query")
+            sys.stderr.write("Error: Wrong sql query\n")
             sys.exit()
         if clauses[2]!="ORDER BY":
-            sys.stderr.write("Error: Wrong sql query")
+            sys.stderr.write("Error: Wrong sql query\n")
             sys.exit()
         grouped=1
         checkOrderAndGroup(clauses[1],clauses[3])
@@ -573,13 +573,13 @@ def executeQuery(tables, cols, distinct_flag, clauses, selectList):
             groupedDict=processGroupBy(clauses[1:3],cols,finalAns)
             newTable=aggregate(groupedDict)
         else:
-            sys.stderr.write("Error: wrong sql query")
+            sys.stderr.write("Error: wrong sql query\n")
             sys.exit()
         if clauses[3]=='ORDER BY':
             checkOrderAndGroup(clauses[2],clauses[4])
             newTable=processOrderBy(clauses[3:5],newTable,selectList,1)
         else:
-            sys.stderr.write("Error: wrong sql query")
+            sys.stderr.write("Error: wrong sql query\n")
             sys.exit()
     #print("!!!!!!!!!!!FINAL ANS!!!!!!!!!!")
     newTable=projectHelper(newTable,cols,selectList,grouped)
@@ -594,7 +594,7 @@ def main():
     makeDatabase(schema)
     #print(database)
     if not len(sys.argv)==2:
-        sys.stderr.write("Error: Wrong input. Correct input syntax=> bash 2020201063.sh \"query\"")
+        sys.stderr.write("Error: Wrong input. Correct input syntax=> bash 2020201063.sh \"query\"\n")
         return
     queryTokens=TokenizeQuery(sys.argv[1])
     #print("query after tokenizing",queryTokens)
